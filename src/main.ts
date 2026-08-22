@@ -1,34 +1,40 @@
 import { invoke } from "@tauri-apps/api/core";
 
-// Define the shape of the data coming from Rust
 interface AppStats {
   date: string;
   total_seconds: number;
 }
 
-async function showScreenTime() {
-  try {
-    // Call the Rust command
-    const stats = await invoke<AppStats>("get_stats");
-    
-    // Calculate hours and minutes
-    const hours = Math.floor(stats.total_seconds / 3600);
-    const minutes = Math.floor((stats.total_seconds % 3600) / 60);
-    
-    const display = document.getElementById("time-display");
-    if (display) {
-      display.innerText = `Today's Screen Time: ${hours}h ${minutes}m`;
-    }
+function formatTime(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-    // Visual warning if over 10 hours (36000 seconds)
-    if (stats.total_seconds > 36000) {
-      document.body.style.backgroundColor = "#ffcccc"; // Light red
-      document.body.style.color = "#550000";
-    }
-  } catch (e) {
-    console.error("Failed to load stats:", e);
-    const display = document.getElementById("time-display");
-    if (display) display.innerText = "Error loading stats.";
+  return [hours, minutes, seconds]
+    .map((v) => v.toString().padStart(2, "0"))
+    .join(":");
+}
+
+async function initTracker() {
+  const displayEl = document.getElementById("time-display");
+  if (!displayEl) return;
+
+  try {
+    // 1. Fetch saved initial stats from Rust backend
+    const stats = await invoke<AppStats>("get_stats");
+    let currentSeconds = stats.total_seconds;
+
+    displayEl.textContent = formatTime(currentSeconds);
+
+    // 2. Start live counter tick on the frontend
+    setInterval(() => {
+      currentSeconds += 1;
+      displayEl.textContent = formatTime(currentSeconds);
+    }, 1000);
+  } catch (error) {
+    console.error("Failed to load screen time stats:", error);
+    displayEl.textContent = "Error Loading Time";
   }
 }
-   
+
+window.addEventListener("DOMContentLoaded", initTracker);
