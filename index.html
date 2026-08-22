@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Screen Time Tracker</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+        transition: background-color 0.5s ease;
+      }
+      h1 { font-size: 2.5rem; color: #333; }
+      #time-display {
+        font-size: 4rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-top: 20px;
+      }
+      .info { margin-top: 20px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <h1>Screen Time Tracker</h1>
+    
+    <!-- This ID matches the one in main.ts -->
+    <div id="time-display">Loading...</div>
+    
+    <p class="info">Keep this app open to track your time.</p>
+    <p class="info">Close the window to save your session.</p>
+
+    <!-- Make sure this points to your compiled TS file -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>   
