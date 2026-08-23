@@ -20,21 +20,24 @@ async function initTracker() {
   if (!displayEl) return;
 
   try {
-    // 1. Fetch saved initial stats from Rust backend
-    const stats = await invoke<AppStats>("get_stats");
-    let currentSeconds = stats.total_seconds;
-
-    displayEl.textContent = formatTime(currentSeconds);
-
-    // 2. Start live counter tick on the frontend
-    setInterval(() => {
-      currentSeconds += 1;
-      displayEl.textContent = formatTime(currentSeconds);
-    }, 1000);
+    // Initial fetch to render stored time immediately on launch
+    const initialStats = await invoke<AppStats>("get_stats");
+    displayEl.textContent = formatTime(initialStats.total_seconds);
   } catch (error) {
-    console.error("Failed to load screen time stats:", error);
+    console.error("Failed to fetch initial stats:", error);
     displayEl.textContent = "Error Loading Time";
+    return;
   }
+
+  // Active continuous tick: increments Rust state and saves to disk every second
+  setInterval(async () => {
+    try {
+      const updatedStats = await invoke<AppStats>("tick");
+      displayEl.textContent = formatTime(updatedStats.total_seconds);
+    } catch (error) {
+      console.error("Failed to tick active session:", error);
+    }
+  }, 1000);
 }
 
 window.addEventListener("DOMContentLoaded", initTracker);
