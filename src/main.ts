@@ -1,8 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 
+interface DayStat {
+  date: string;
+  total_seconds: number;
+}
+
 interface AppStats {
   date: string;
   total_seconds: number;
+  history: DayStat[];
 }
 
 function formatTime(totalSeconds: number): string {
@@ -29,7 +35,7 @@ async function initTracker() {
     return;
   }
 
-  // Active continuous tick: increments Rust state and saves to disk every second
+  // Active continuous tick: increments Rust state and saves atomically to disk
   setInterval(async () => {
     try {
       const updatedStats = await invoke<AppStats>("tick");
