@@ -10,40 +10,86 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start; /* Locks elements to top so opening table doesn't shift title/timer */
         min-height: 100vh;
         margin: 0;
+        padding-top: 60px; /* Clean top offset */
+        box-sizing: border-box;
         background-color: #f0f0f0;
       }
+
       h1 { font-size: 2rem; color: #333; margin-bottom: 5px; }
+
       #time-display {
         font-size: 3.5rem;
         font-weight: bold;
         color: #2c3e50;
         margin: 10px 0 20px 0;
       }
+
+      /* Clean/Minimal Toggle Styling */
+      .toggle-btn {
+        cursor: pointer;
+        padding: 8px 14px;
+        background: #ffffff;
+        color: #444;
+        border: 1px solid #d0d0d0;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        user-select: none;
+        margin-bottom: 15px;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+      }
+
+      .toggle-btn:hover {
+        background-color: #e8e8e8;
+        border-color: #bbb;
+      }
+
+      .caret {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #555;
+        transition: transform 0.2s ease;
+      }
+
+      .caret.open {
+        transform: rotate(180deg);
+      }
+
       .history-container {
         width: 80%;
         max-width: 400px;
         background: white;
         padding: 15px;
         border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       }
+
       .history-container h2 {
         font-size: 1.2rem;
         margin-top: 0;
         color: #444;
       }
+
       table {
         width: 100%;
         border-collapse: collapse;
       }
+
       th, td {
         padding: 8px;
         text-align: left;
         border-bottom: 1px solid #ddd;
       }
+
       th { color: #666; font-size: 0.9rem; }
       td { font-size: 0.95rem; color: #222; }
     </style>
@@ -52,7 +98,12 @@
     <h1>Screen Time Tracker</h1>
     <div id="time-display">Loading...</div>
 
-    <div class="history-container">
+    <div id="toggle" class="toggle-btn">
+      <span id="toggle-text">Show Table</span>
+      <span class="caret"></span>
+    </div>
+
+    <div class="history-container" style="display: none;">
       <h2>Usage History</h2>
       <table>
         <thead>
@@ -67,6 +118,19 @@
       </table>
     </div>
 
+    <script>
+      const btn = document.getElementById("toggle");
+      const btnText = document.getElementById("toggle-text");
+      const tableDiv = document.querySelector(".history-container");
+      const caret = btn.querySelector(".caret");
+
+      btn.addEventListener("click", () => {
+        const isOpen = tableDiv.style.display !== "none";
+        tableDiv.style.display = isOpen ? "none" : "block";
+        caret.classList.toggle("open", !isOpen);
+        btnText.textContent = isOpen ? "Show Table" : "Hide Table";
+      });
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
