@@ -1,6 +1,7 @@
 use chrono::Local;
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::PathBuf;
 use tauri::Manager;
 
@@ -17,14 +18,12 @@ pub struct AppStats {
     pub history: Vec<DayStat>,
 }
 
-// Helper to ensure app data directory exists and return file path
 fn get_stats_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.join("stats.json"))
 }
 
-// Helper function to handle midnight rollover and save previous day to history
 fn check_day_reset(stats: &mut AppStats, today: &str) {
     if stats.date != today {
         if stats.total_seconds > 0 {
@@ -41,11 +40,14 @@ fn check_day_reset(stats: &mut AppStats, today: &str) {
 #[tauri::command]
 fn get_stats(app: tauri::AppHandle) -> Result<AppStats, String> {
     let path = get_stats_file_path(&app)?;
+    let backup_path = path.with_extension("bak");
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    if path.exists() {
-        let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        if let Ok(mut stats) = serde_json::from_str::<AppStats>(&content) {
+    let content = fs::read_to_string(&path)
+        .or_else(|_| fs::read_to_string(&backup_path));
+
+    if let Ok(data) = content {
+        if let Ok(mut stats) = serde_json::from_str::<AppStats>(&data) {
             check_day_reset(&mut stats, &today);
             return Ok(stats);
         }
@@ -61,17 +63,25 @@ fn get_stats(app: tauri::AppHandle) -> Result<AppStats, String> {
 #[tauri::command]
 fn tick(app: tauri::AppHandle) -> Result<AppStats, String> {
     let path = get_stats_file_path(&app)?;
+    let temp_path = path.with_extension("tmp");
+    let backup_path = path.with_extension("bak");
     let today = Local::now().format("%Y-%m-%d").to_string();
 
     let mut stats = get_stats(app.clone())?;
-
     check_day_reset(&mut stats, &today);
     stats.total_seconds += 1;
 
-    // Atomic write (temp file -> rename) to avoid JSON corruption on laptop sleep
     let json = serde_json::to_string_pretty(&stats).map_err(|e| e.to_string())?;
-    let temp_path = path.with_extension("tmp");
-    fs::write(&temp_path, json).map_err(|e| e.to_string())?;
+
+    if path.exists() {
+        let _ = fs::copy(&path, &backup_path);
+    }
+
+    let mut file = File::create(&temp_path).map_err(|e| e.to_string())?;
+    file.write_all(json.as_bytes()).map_err(|e| e.to_string())?;
+    
+    file.sync_all().map_err(|e| e.to_string())?;
+
     fs::rename(temp_path, &path).map_err(|e| e.to_string())?;
 
     Ok(stats)
